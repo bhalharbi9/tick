@@ -1,1 +1,0 @@
-create table fixtures(id serial primary key,team_home text,team_away text,first_leg_score text);create table predictions(id serial primary key,full_name text,fixture_id int,pred_home int,pred_away int);
