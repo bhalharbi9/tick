@@ -1,0 +1,54 @@
+<!doctype html><html lang="ar" dir="rtl"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة المشرف</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css"></head>
+<body>
+<header class="hero"><div class="wrap row"><div><div class="badgex">Admin Panel</div><h1>🛠️ لوحة المشرف</h1><p>إدخال النتائج والحسم بعد الأشواط والترجيح.</p></div><nav class="nav row"><a href="index.html">⚽ التوقعات</a><a href="leaderboard.html">🏆 الترتيب</a></nav></div></header>
+<main class="wrap">
+<div id="msg"></div>
+<section class="card"><div class="row"><div style="flex:1 1 320px"><label class="label">كلمة مرور الإدارة</label><input id="pass" type="password" placeholder="اكتب كلمة المرور"><div class="small" style="margin-top:8px">هذه حماية واجهة فقط في النسخة الثابتة.</div></div><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="unlock" class="btn btn-primary">دخول</button><button id="hint" class="btn btn-soft">تعليمات التهيئة</button></div></div></section>
+<section id="content" style="display:none">
+  <section class="grid4" style="margin-top:14px">
+    <article class="card stat"><div class="label">عدد المباريات</div><div class="value" id="mc">—</div></article>
+    <article class="card stat"><div class="label">نتائج مُدخلة</div><div class="value" id="rc">—</div></article>
+    <article class="card stat"><div class="label">عدد المشاركين</div><div class="value" id="pc">—</div></article>
+    <article class="card stat"><div class="label">التحديث الأخير</div><div class="value small" id="lu">—</div></article>
+  </section>
+  <div class="headline"><div><h2>إدارة المباريات</h2><p class="sub">عدّل الذهاب، الإياب، الأشواط، الترجيح، والتوقيت.</p></div><button id="save" class="btn btn-primary">حفظ النتائج</button></div>
+  <div id="list" class="matches"></div>
+</section>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script><script src="assets/js/supabase-client.js"></script><script src="assets/js/common.js"></script>
+<script>
+let fixtures=[];
+document.addEventListener("DOMContentLoaded", ()=>{ $("unlock").onclick=unlock; $("hint").onclick=()=>{$("msg").innerHTML=alertBox("info","نفّذ schema.sql أولًا ثم seed.sql داخل Supabase، وبعدها عدّل config.js.");}; $("save").onclick=saveAll; });
+async function unlock(){
+  if($("pass").value !== window.APP_CONFIG.ADMIN_PASS){ $("msg").innerHTML=alertBox("danger","كلمة المرور غير صحيحة."); return; }
+  $("content").style.display="block"; $("msg").innerHTML=alertBox("success","تم فتح لوحة المشرف."); await loadData();
+}
+async function loadData(){
+  try{
+    const [{data:f,error:e1},{data:p,error:e2}] = await Promise.all([db.from("fixtures").select("*").order("display_order",{ascending:true}).order("kickoff_at",{ascending:true}), db.from("participants").select("*")]);
+    if(e1) throw e1; if(e2) throw e2; fixtures=f||[];
+    $("mc").textContent=fixtures.length; $("rc").textContent=fixtures.filter(x=>x.actual_home_goals!==null&&x.actual_away_goals!==null).length; $("pc").textContent=(p||[]).length; $("lu").textContent=dt(new Date().toISOString());
+    $("list").innerHTML = fixtures.map(f=>`<article class="card match"><div class="top"><div><div style="font-weight:800">${esc(f.home_team)} × ${esc(f.away_team)}</div><div class="small">${esc(dt(f.kickoff_at))}</div></div><div class="pill ${locked(f)?'locked':'open'}">${locked(f)?'🔒 مغلق':'🟢 مفتوح'}</div></div>
+      <div class="meta">
+        <div class="box"><div class="t">نتيجة الذهاب</div><div class="score"><input id="fh-${f.id}" type="number" value="${f.first_leg_home_goals ?? 0}"><input id="fa-${f.id}" type="number" value="${f.first_leg_away_goals ?? 0}"></div></div>
+        <div class="box"><div class="t">نتيجة الإياب الفعلية</div><div class="score"><input id="ah-${f.id}" type="number" value="${f.actual_home_goals ?? ''}"><input id="aa-${f.id}" type="number" value="${f.actual_away_goals ?? ''}"></div></div>
+        <div class="box"><div class="t">وقت المباراة</div><input id="ko-${f.id}" type="datetime-local" value="${toLocal(f.kickoff_at)}"></div>
+        <div class="box"><div class="t">الإغلاق قبل المباراة (دقائق)</div><input id="lk-${f.id}" type="number" value="${f.lock_minutes_before ?? 10}"></div>
+        <div class="box"><div class="t">حسم المباراة</div><label class="check"><input id="ex-${f.id}" type="checkbox" ${f.went_extra_time?'checked':''}> أشواط إضافية</label><label class="check"><input id="pn-${f.id}" type="checkbox" ${f.went_penalties?'checked':''}> ركلات ترجيح</label><select id="pw-${f.id}"><option value="">الفائز بالترجيح</option><option value="${esc(f.home_team)}" ${f.penalties_winner===f.home_team?'selected':''}>${esc(f.home_team)}</option><option value="${esc(f.away_team)}" ${f.penalties_winner===f.away_team?'selected':''}>${esc(f.away_team)}</option></select></div>
+      </div></article>`).join("");
+  }catch(e){ $("msg").innerHTML=alertBox("danger","تعذر تحميل بيانات الإدارة."); console.error(e); }
+}
+function toLocal(v){ const d=new Date(v); const p=n=>String(n).padStart(2,"0"); return `${d.getFullYear()}-${p(d.getMonth()+1)}-${p(d.getDate())}T${p(d.getHours())}:${p(d.getMinutes())}`; }
+async function saveAll(){
+  try{
+    const rows = fixtures.map(f=>({id:f.id, first_leg_home_goals:+$(`fh-${f.id}`).value||0, first_leg_away_goals:+$(`fa-${f.id}`).value||0, actual_home_goals:$(`ah-${f.id}`).value===""?null:+$(`ah-${f.id}`).value, actual_away_goals:$(`aa-${f.id}`).value===""?null:+$(`aa-${f.id}`).value, kickoff_at:new Date($(`ko-${f.id}`).value).toISOString(), lock_minutes_before:+$(`lk-${f.id}`).value||10, went_extra_time:$(`ex-${f.id}`).checked, went_penalties:$(`pn-${f.id}`).checked, penalties_winner:$(`pw-${f.id}`).value||null}));
+    const {error}=await db.from("fixtures").upsert(rows,{onConflict:"id"}); if(error) throw error; $("msg").innerHTML=alertBox("success","تم حفظ النتائج بنجاح."); await loadData();
+  }catch(e){ $("msg").innerHTML=alertBox("danger","تعذر حفظ النتائج."); console.error(e); }
+}
+</script></body></html>

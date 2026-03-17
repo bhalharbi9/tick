@@ -1,0 +1,99 @@
+<!doctype html><html lang="ar" dir="rtl"><head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>توقعات دور الـ16</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/style.css"></head>
+<body>
+<header class="hero"><div class="wrap row"><div><div class="badgex">UCL Predictions</div><h1>⚽ توقعات دور الـ16</h1><p>نتيجة الإياب + الأشواط الإضافية + ركلات الترجيح.</p></div><nav class="nav row"><a href="leaderboard.html">🏆 الترتيب</a><a href="admin.html">🛠️ المشرف</a></nav></div></header>
+<main class="wrap">
+<div id="msg"></div>
+<section class="card">
+  <div class="row">
+    <div style="flex:1 1 340px">
+      <label class="label">اسم المشارك</label>
+      <input id="participantName" type="text" placeholder="اكتب اسمك هنا">
+      <div class="small" style="margin-top:8px">الاسم يُحفظ على نفس الجهاز لتسهيل الرجوع لاحقًا.</div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button id="restoreBtn" class="btn btn-soft">استرجاع توقّعاتي</button>
+      <button id="saveBtn" class="btn btn-primary">حفظ</button>
+    </div>
+  </div>
+</section>
+
+<section class="grid4" style="margin-top:14px">
+  <article class="card stat"><div class="label">عدد المباريات</div><div class="value" id="matchesCount">—</div></article>
+  <article class="card stat"><div class="label">المفتوحة الآن</div><div class="value" id="openCount">—</div></article>
+  <article class="card stat"><div class="label">المغلقة الآن</div><div class="value" id="lockedCount">—</div></article>
+  <article class="card stat" style="text-align:center"><div class="label">الدخول السريع</div><img id="homeQr" class="qr" alt="QR"></article>
+</section>
+
+<div class="headline"><div><h2>مباريات الإياب</h2><p class="sub">الأوقات مأخوذة من seed.sql.</p></div></div>
+<div id="matches" class="matches"></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="assets/js/config.js"></script><script src="assets/js/supabase-client.js"></script><script src="assets/js/common.js"></script>
+<script>
+let fixtures=[], predMap=new Map(), participant=null;
+document.addEventListener("DOMContentLoaded", async ()=>{
+  setQR("homeQr"); $("participantName").value=getName();
+  $("restoreBtn").onclick=loadMine; $("saveBtn").onclick=savePreds;
+  await loadFixtures(); if($("participantName").value.trim()) await loadMine();
+});
+async function loadFixtures(){
+  try{
+    const {data,error}=await db.from("fixtures").select("*").order("display_order",{ascending:true}).order("kickoff_at",{ascending:true});
+    if(error) throw error; fixtures=data||[];
+    $("matchesCount").textContent=fixtures.length; $("openCount").textContent=fixtures.filter(f=>!locked(f)).length; $("lockedCount").textContent=fixtures.filter(f=>locked(f)).length;
+    render();
+  }catch(e){ $("msg").innerHTML=alertBox("danger","تعذر تحميل المباريات. تأكد من config.js ثم نفّذ schema.sql و seed.sql."); console.error(e); }
+}
+function render(){
+  const el=$("matches");
+  if(!fixtures.length){ el.innerHTML=`<div class="card">لا توجد مباريات. نفّذ seed.sql أولًا.</div>`; return; }
+  el.innerHTML=fixtures.map(f=>{
+    const p=predMap.get(f.id)||{}; const L=locked(f);
+    const actualReady=f.actual_home_goals!==null&&f.actual_away_goals!==null;
+    const pts=actualReady?points(p.pred_home_goals,p.pred_away_goals,f.actual_home_goals,f.actual_away_goals,p.pred_extra_time,f.went_extra_time,p.pred_penalties,f.went_penalties,p.pred_penalties_winner,f.penalties_winner):null;
+    return `<article class="card match">
+      <div class="top"><div><div class="small">${esc(dt(f.kickoff_at))}</div><div class="small">الإغلاق قبل ${esc(f.lock_minutes_before)} دقائق</div></div><div class="pill ${L?'locked':'open'}">${L?'🔒 مغلق':'🟢 مفتوح'}</div></div>
+      <div class="teams"><div class="team">${esc(f.home_team)}</div><div class="vs">VS</div><div class="team">${esc(f.away_team)}</div></div>
+      <div class="meta"><div class="box"><div class="t">نتيجة الذهاب</div><div class="v">${esc(f.first_leg_home_goals)} - ${esc(f.first_leg_away_goals)}</div></div><div class="box"><div class="t">التوقيت</div><div class="v">${esc(dt(f.kickoff_at))}</div></div></div>
+      <div class="score"><div><label class="label">توقع ${esc(f.home_team)}</label><input id="h-${f.id}" type="number" min="0" max="20" value="${p.pred_home_goals ?? ''}" ${L?'disabled':''}></div><div><label class="label">توقع ${esc(f.away_team)}</label><input id="a-${f.id}" type="number" min="0" max="20" value="${p.pred_away_goals ?? ''}" ${L?'disabled':''}></div></div>
+      <div class="meta" style="margin-top:12px"><div class="box"><div class="t">حسم المباراة</div>
+        <label class="check"><input id="e-${f.id}" type="checkbox" ${p.pred_extra_time?'checked':''} ${L?'disabled':''}> أشواط إضافية</label>
+        <label class="check"><input id="p-${f.id}" type="checkbox" ${p.pred_penalties?'checked':''} ${L?'disabled':''}> ركلات ترجيح</label>
+        <select id="w-${f.id}" ${L?'disabled':''}><option value="">الفائز بالترجيح</option><option value="${esc(f.home_team)}" ${p.pred_penalties_winner===f.home_team?'selected':''}>${esc(f.home_team)}</option><option value="${esc(f.away_team)}" ${p.pred_penalties_winner===f.away_team?'selected':''}>${esc(f.away_team)}</option></select>
+      </div><div class="box"><div class="t">النقاط الإضافية</div><div class="small">+2 للأشواط الإضافية الصحيحة، +2 للترجيح، +3 للفائز بالترجيح.</div>${actualReady?`<div class="note" style="margin-top:10px;color:#14532d;font-weight:700">النتيجة الفعلية: ${f.actual_home_goals} - ${f.actual_away_goals} | نقاطك: ${pts ?? 0}</div>`:''}</div></div>
+    </article>`;
+  }).join("");
+}
+async function getOrCreate(name){
+  const {data:ex,error:e1}=await db.from("participants").select("*").eq("full_name",name).maybeSingle(); if(e1) throw e1; if(ex) return ex;
+  const {data:cr,error:e2}=await db.from("participants").insert([{full_name:name}]).select().single(); if(e2) throw e2; return cr;
+}
+async function loadMine(){
+  try{
+    const name=$("participantName").value.trim(); if(!name){ $("msg").innerHTML=alertBox("warning","اكتب اسمك أولًا."); return; }
+    setName(name); predMap=new Map();
+    const {data:part,error:e1}=await db.from("participants").select("*").eq("full_name",name).maybeSingle(); if(e1) throw e1; participant=part;
+    if(part){ const {data:preds,error:e2}=await db.from("predictions").select("*").eq("participant_id",part.id); if(e2) throw e2; (preds||[]).forEach(r=>predMap.set(r.fixture_id,r)); $("msg").innerHTML=alertBox("success","تم استرجاع توقّعاتك بنجاح."); }
+    else $("msg").innerHTML=alertBox("info","هذا الاسم جديد. بعد الحفظ سيتم إنشاء مشاركتك.");
+    render();
+  }catch(e){ $("msg").innerHTML=alertBox("danger","تعذر استرجاع التوقعات."); console.error(e); }
+}
+async function savePreds(){
+  try{
+    const name=$("participantName").value.trim(); if(!name){ $("msg").innerHTML=alertBox("warning","يرجى كتابة الاسم أولًا."); return; }
+    setName(name); const part=await getOrCreate(name);
+    const payload=[];
+    for(const f of fixtures){ if(locked(f)) continue; const hv=$(`h-${f.id}`).value, av=$(`a-${f.id}`).value; if(hv===""||av==="") continue;
+      payload.push({participant_id:part.id, fixture_id:f.id, pred_home_goals:+hv, pred_away_goals:+av, pred_extra_time:$(`e-${f.id}`).checked, pred_penalties:$(`p-${f.id}`).checked, pred_penalties_winner:$(`w-${f.id}`).value||null});
+    }
+    if(!payload.length){ $("msg").innerHTML=alertBox("warning","لا توجد توقعات قابلة للحفظ."); return; }
+    const {error}=await db.from("predictions").upsert(payload,{onConflict:"participant_id,fixture_id"}); if(error) throw error;
+    $("msg").innerHTML=alertBox("success","تم حفظ التوقعات بنجاح."); await loadMine();
+  }catch(e){ $("msg").innerHTML=alertBox("danger", e.message || "تعذر حفظ التوقعات."); console.error(e); }
+}
+</script></body></html>
