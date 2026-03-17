@@ -1,28 +1,32 @@
-window.APP = { rewards:{1:"30 ريال",2:"20 ريال",3:"10 ريال"} };
-const $ = id => document.getElementById(id);
-const esc = v => String(v ?? "").replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
-function alertBox(type,msg){ return `<div class="alert alert-${type}">${esc(msg)}</div>`; }
-function dt(v){
-  if(!v) return "—";
-  const d = new Date(v);
+window.APP = {
+  rewards: {1:"30 ريال",2:"20 ريال",3:"10 ريال"},
+  teamAssets: {
+    "ريال مدريد": {logo:"https://upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg", colors:["#d9b370","#1a2c5b"]},
+    "مانشستر سيتي": {logo:"https://upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg", colors:["#6cabdd","#1c2c5b"]},
+    "برشلونة": {logo:"https://upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona_%28crest%29.svg", colors:["#a50044","#004d98"]},
+    "ليفربول": {logo:"https://upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg", colors:["#c8102e","#00b2a9"]},
+    "تشيلسي": {logo:"https://upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg", colors:["#034694","#dba111"]},
+    "أرسنال": {logo:"https://upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg", colors:["#db0007","#9c824a"]},
+    "بايرن ميونخ": {logo:"https://upload.wikimedia.org/wikipedia/en/1/1f/FC_Bayern_Munich_logo_%282017%29.svg", colors:["#dc052d","#0066b2"]},
+    "أتلتيكو مدريد": {logo:"https://upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg", colors:["#d71920","#21468b"]}
+  }
+};
 
-  return isNaN(d) ? v : new Intl.DateTimeFormat("ar-SA",{
-    timeZone: "Asia/Riyadh", // 👈 هذا المهم
-    year:"numeric",
-    month:"2-digit",
-    day:"2-digit",
-    hour:"2-digit",
-    minute:"2-digit",
-    hour12: true
-  }).format(d);
+function getAsset(teamName){
+  return window.APP.teamAssets[teamName] || {
+    logo: "",
+    colors: ["#1f6feb","#114fb8"]
+  };
 }
-function locked(f){ const k=new Date(f.kickoff_at).getTime(); return Date.now() >= (k - Number(f.lock_minutes_before||10)*60000); }
-function outcome(h,a){ return h>a?"H":h<a?"A":"D"; }
-function points(ph,pa,rh,ra,pe,re,pp,rp,pw,rw){ if([ph,pa,rh,ra].some(v=>v===null||v===undefined||v==="")) return 0; ph=+ph;pa=+pa;rh=+rh;ra=+ra; let p=0;
- if(ph===rh && pa===ra) p=10; else { const po=outcome(ph,pa), ro=outcome(rh,ra), pd=ph-pa, rd=rh-ra; if(po===ro&&pd===rd)p=7; else if(po===ro)p=5; if(ph===rh||pa===ra)p+=3; const dist=Math.abs(ph-rh)+Math.abs(pa-ra); if(dist===1)p+=2; else if(dist===2)p+=1; }
- if(Boolean(pe)===Boolean(re)) p+=2; if(Boolean(pp)===Boolean(rp)) p+=2; if(Boolean(rp)&&pw&&rw&&pw===rw) p+=3; return p; }
-function reward(rank){ return window.APP.rewards[rank] || "—"; }
-function csv(filename, rows){ const s=rows.map(r=>r.map(v=>`"${String(v??"").replaceAll('"','""')}"`).join(",")).join("\n"); const b=new Blob(["\uFEFF"+s],{type:"text/csv;charset=utf-8;"}); const u=URL.createObjectURL(b); const a=document.createElement("a"); a.href=u; a.download=filename; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(u); }
-function setQR(id){ const el=$(id); if(!el) return; const url=location.origin + location.pathname.replace(/[^/]+$/,"index.html"); el.src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data="+encodeURIComponent(url); }
-function setName(v){ localStorage.setItem("ucl_participant_name", v); }
-function getName(){ return localStorage.getItem("ucl_participant_name") || ""; }
+
+function coverStyle(home, away){
+  const a = getAsset(home).colors;
+  const b = getAsset(away).colors;
+
+  return `background: linear-gradient(135deg,
+    ${a[0]} 0%,
+    ${a[1]} 45%,
+    ${b[0]} 55%,
+    ${b[1]} 100%
+  );`;
+}
