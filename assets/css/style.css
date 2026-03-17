@@ -1,0 +1,103 @@
+
+:root{
+  --hero-1:#0f766e;
+  --hero-2:#1d4ed8;
+  --card-radius:1.2rem;
+}
+body{
+  font-family:"Segoe UI",Tahoma,Arial,sans-serif;
+}
+.hero-strip{
+  background:linear-gradient(135deg, rgba(15,118,110,.12), rgba(29,78,216,.10));
+  border-bottom:1px solid rgba(0,0,0,.06);
+}
+.quick-card{
+  background:#fff;
+  border:1px solid rgba(0,0,0,.08);
+  border-radius:var(--card-radius);
+  box-shadow:0 10px 30px rgba(15,23,42,.05);
+}
+.fixture-card,.top-card,.admin-fixture-card{
+  border:0;
+  border-radius:var(--card-radius);
+  box-shadow:0 10px 30px rgba(15,23,42,.06);
+}
+.fixture-card .card-body,.admin-fixture-card .card-body{
+  padding:1.2rem;
+}
+.fixture-status{
+  font-size:.85rem;
+  padding:.35rem .75rem;
+  border-radius:999px;
+}
+.status-open{
+  background:#dcfce7;
+  color:#166534;
+}
+.status-locked{
+  background:#fee2e2;
+  color:#991b1b;
+}
+.score-input{
+  max-width:90px;
+  text-align:center;
+  font-weight:700;
+}
+.first-leg-badge{
+  background:#eef2ff;
+  color:#3730a3;
+  border-radius:999px;
+  padding:.35rem .8rem;
+  font-size:.85rem;
+  display:inline-block;
+}
+.last5-badge{
+  border-radius:999px;
+  padding:.25rem .55rem;
+  font-size:.78rem;
+  border:1px solid rgba(0,0,0,.08);
+  background:#fff;
+}
+.team-title{
+  font-weight:800;
+  font-size:1.05rem;
+}
+.qr-box canvas,img{
+  max-width:140px;
+}
+.top-card{
+  min-height:120px;
+}
+.top-card.rank-1{
+  background:linear-gradient(135deg,#fef3c7,#fff);
+}
+.top-card.rank-2{
+  background:linear-gradient(135deg,#e5e7eb,#fff);
+}
+.top-card.rank-3{
+  background:linear-gradient(135deg,#fed7aa,#fff);
+}
+.lineup-box, .last5-box{
+  background:#f8fafc;
+  border:1px solid rgba(0,0,0,.06);
+  border-radius:1rem;
+  padding:.85rem;
+}
+.table thead th{
+  background:#f8fafc;
+  position:sticky;
+  top:0;
+}
+.print-hidden{}
+@media print{
+  .print-hidden, nav, #printBtn, #exportCsvBtn{
+    display:none !important;
+  }
+  body{
+    background:#fff;
+  }
+  .card, .quick-card, .top-card{
+    box-shadow:none !important;
+    border:1px solid #ddd !important;
+  }
+}
