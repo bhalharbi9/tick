@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>توقعات دور الـ16</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/style.css" />
+</head>
+<body class="page-bg">
+  <header class="hero-bar">
+    <div class="container-xl py-4">
+      <div class="hero-wrap">
+        <div>
+          <div class="hero-badge">UCL Predictions</div>
+          <h1 class="hero-title">⚽ توقعات دور الـ16</h1>
+          <p class="hero-subtitle">توقّع نتيجة الإياب فقط، وشاهد الترتيب يتحدّث مباشرة.</p>
+        </div>
+        <div class="hero-links">
+          <a class="hero-link" href="leaderboard.html">🏆 الترتيب</a>
+          <a class="hero-link" href="admin.html">🛠️ المشرف</a>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container-xl py-3 py-md-4">
+    <div id="appAlert"></div>
+
+    <section class="glass-card mb-3 mb-md-4">
+      <div class="row g-3 align-items-end">
+        <div class="col-12 col-lg-7">
+          <label class="form-label fw-bold">اسم المشارك</label>
+          <input type="text" id="participantName" class="form-control form-control-lg app-input" placeholder="اكتب اسمك هنا">
+          <div class="form-hint mt-2">الاسم يُحفظ على نفس الجهاز لتسهيل الرجوع لاحقًا.</div>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-3">
+          <button id="loadMyPredictionsBtn" class="btn btn-soft-primary w-100 btn-lg">استرجاع توقّعاتي</button>
+        </div>
+        <div class="col-12 col-sm-6 col-lg-2">
+          <button id="savePredictionsBtn" class="btn btn-primary w-100 btn-lg">حفظ</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="stats-grid mb-3 mb-md-4">
+      <article class="stat-card">
+        <div class="stat-label">عدد المباريات</div>
+        <div class="stat-value" id="matchesCount">—</div>
+      </article>
+      <article class="stat-card">
+        <div class="stat-label">المفتوحة الآن</div>
+        <div class="stat-value" id="openCount">—</div>
+      </article>
+      <article class="stat-card">
+        <div class="stat-label">المغلقة الآن</div>
+        <div class="stat-value" id="lockedCount">—</div>
+      </article>
+      <article class="stat-card qr-card">
+        <div class="stat-label">الدخول السريع</div>
+        <img id="homeQr" class="qr-img" alt="QR Code">
+      </article>
+    </section>
+
+    <section class="section-head">
+      <div>
+        <h2 class="section-title">مباريات الإياب</h2>
+        <p class="section-subtitle">يغلق التوقع تلقائيًا قبل بداية المباراة بعدد الدقائق المحدد.</p>
+      </div>
+    </section>
+
+    <div id="loadingState" class="placeholder-wrap">
+      <div class="placeholder-card"></div>
+      <div class="placeholder-card"></div>
+      <div class="placeholder-card"></div>
+    </div>
+
+    <div id="emptyState" class="empty-state d-none">
+      <div class="empty-icon">📭</div>
+      <div class="empty-title">لا توجد مباريات حالياً</div>
+      <div class="empty-text">نفّذ ملف <strong>seed.sql</strong> داخل Supabase لإظهار المباريات.</div>
+    </div>
+
+    <div id="matchesGrid" class="matches-grid d-none"></div>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="assets/js/config.js"></script>
+  <script src="assets/js/supabase-client.js"></script>
+  <script src="assets/js/common.js"></script>
+  <script src="assets/js/app.js"></script>
+</body>
+</html>
