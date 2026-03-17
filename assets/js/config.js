@@ -1,0 +1,1 @@
+const supabase = supabase.createClient('YOUR_URL','YOUR_KEY');

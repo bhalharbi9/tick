@@ -1,0 +1,1 @@
+async function load(){let {data}=await supabase.from('leaderboard').select('*');let t='';data.forEach((p,i)=>{t+=`<div class="card">${i+1}-${p.full_name}(${p.total_points})</div>`});document.getElementById('table').innerHTML=t;}load();setInterval(load,10000);
